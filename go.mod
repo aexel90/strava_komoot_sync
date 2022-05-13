@@ -1,4 +1,4 @@
-module strava_komoot_sync
+module github.com/aexel90/strava_komoot_sync
 
 go 1.18
 

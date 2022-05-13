@@ -4,11 +4,12 @@ import (
 	"flag"
 	"log"
 	"math"
-	"strava_komoot_sync/constants"
-	"strava_komoot_sync/komoot"
-	"strava_komoot_sync/strava"
 	"strings"
 	"time"
+
+	"github.com/aexel90/strava_komoot_sync/constants"
+	"github.com/aexel90/strava_komoot_sync/komoot"
+	"github.com/aexel90/strava_komoot_sync/strava"
 )
 
 func main() {

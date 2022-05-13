@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strava_komoot_sync/constants"
 	"time"
 
 	strava "github.com/aexel90/go.strava"
+	"github.com/aexel90/strava_komoot_sync/constants"
 )
 
 type StravaService struct {
