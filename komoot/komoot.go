@@ -166,11 +166,11 @@ func (k *KomootService) UpdateActivity(komootActivity *Activity, name string, pu
 
 	data := make(map[string]interface{}, 2)
 	if name != "" {
-		log.Printf("Updating KomootActivity '%d' - Name: '%s' --> '%s'", komootActivity.Id, komootActivity.Name, name)
+		log.Printf("Updating KomootActivity '%d' - Name: '%s' --> '%s'", komootActivity.ID, komootActivity.Name, name)
 		data["name"] = name
 	}
 	if public {
-		log.Printf("Updating KomootActivity '%d' - Visibility: '%s' --> '%s'", komootActivity.Id, komootActivity.Status, statusFriends)
+		log.Printf("Updating KomootActivity '%d' - Visibility: '%s' --> '%s'", komootActivity.ID, komootActivity.Status, statusFriends)
 		data["status"] = statusFriends
 	}
 
@@ -179,7 +179,7 @@ func (k *KomootService) UpdateActivity(komootActivity *Activity, name string, pu
 		return err
 	}
 
-	url := fmt.Sprintf("%s/tours/%v", komootApiURL, komootActivity.Id)
+	url := fmt.Sprintf("%s/tours/%v", komootApiURL, komootActivity.ID)
 	req, err := http.NewRequest(http.MethodPatch, url, bytes.NewBuffer(payload))
 	req.Header.Set("Content-Type", "application/json")
 	if err != nil {

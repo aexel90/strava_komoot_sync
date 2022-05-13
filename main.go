@@ -62,7 +62,7 @@ func sync(stravaService *strava.StravaService, komootService *komoot.KomootServi
 			continue
 		}
 
-		log.Printf("KOMOOT: Id: '%d'\tDate: '%s' Name: '%s' Distance: '%f' Private: %t", komootActivity.Id, komootActivity.Date.Format(constants.TimeFormat), komootActivity.Name, komootActivity.Distance, komootActivity.Private)
+		log.Printf("KOMOOT: Id: '%d'\tDate: '%s' Name: '%s' Distance: '%f' Private: %t", komootActivity.ID, komootActivity.Date.Format(constants.TimeFormat), komootActivity.Name, komootActivity.Distance, komootActivity.Private)
 
 		//check name
 		var newKomootName string
