@@ -1,0 +1,88 @@
+package main
+
+import (
+	"flag"
+	"log"
+	"math"
+	"strava_komoot_sync/constants"
+	"strava_komoot_sync/komoot"
+	"strava_komoot_sync/strava"
+	"strings"
+	"time"
+)
+
+func main() {
+
+	komootEmail := flag.String("komoot_email", "", "Komoot Email")
+	komootPassword := flag.String("komoot_pw", "", "Komoot Password")
+	komootUserId := flag.String("komoot_userid", "", "Komoot User ID")
+	stravaClientId := flag.Int("strava_clientid", 0, "Strava Client ID")
+	stravaClientSecret := flag.String("strava_clientsecret", "", "Strava Client Secret")
+	stravaAthleteId := flag.Int64("strava_athleteid", 0, "Strava Athlete ID")
+	stravaCode := flag.String("strava_code", "", "Strava Code")
+	syncAll := flag.Bool("sync_all", false, "Sync all activities")
+	flag.Parse()
+
+	komootService := komoot.NewKomootService(*komootEmail, *komootPassword, *komootUserId)
+	stravaService := strava.NewStravaService(*stravaClientId, *stravaClientSecret, *stravaAthleteId, *stravaCode)
+
+	// sync all and quit
+	if *syncAll {
+		sync(stravaService, komootService, *syncAll)
+		return
+	}
+
+	// sync last 30 activities within endless loop
+	for {
+		sync(stravaService, komootService, false)
+		time.Sleep(5 * time.Minute)
+	}
+}
+
+func sync(stravaService *strava.StravaService, komootService *komoot.KomootService, syncAll bool) {
+
+	stravaActivities, err := stravaService.GetActivities(syncAll)
+	if err != nil {
+		panic(err)
+	}
+
+	komootActivities, err := komootService.GetActivities(syncAll)
+	if err != nil {
+		panic(err)
+	}
+
+	for _, stravaActivity := range stravaActivities {
+
+		log.Print("****************************************************************************")
+		log.Printf("STRAVA: Id: '%d' \t Name: '%s' Distance: '%f' Date: '%s'", stravaActivity.Id, stravaActivity.Name, stravaActivity.Distance, stravaActivity.StartDate.Format(constants.TimeFormat))
+
+		komootActivity := getActivityMatch(stravaActivity.StartDate, stravaActivity.Distance, komootActivities)
+		if komootActivity == nil {
+			log.Print("KOMOOT: no activity found")
+			continue
+		}
+
+		log.Printf("KOMOOT: Id: '%d' \t Name: '%s' Distance: '%f' Date: '%s'", komootActivity.Id, komootActivity.Name, komootActivity.Distance, komootActivity.Date.Format(constants.TimeFormat))
+
+		if strings.TrimSpace(stravaActivity.Name) != strings.TrimSpace(komootActivity.Name) {
+			err := komootService.UpdateActivity(komootActivity, stravaActivity.Name)
+			if err != nil {
+				log.Printf("Error updating: %s", err)
+			}
+		} else {
+			log.Printf("... nothing to sync")
+		}
+	}
+}
+
+func getActivityMatch(stravaDate time.Time, stravaDistance float64, komootActivities *[]komoot.Activity) *komoot.Activity {
+
+	for _, komootActivity := range *komootActivities {
+		// distance tolerance 3km
+		// date tolerance 1 hour
+		if math.Abs(stravaDate.Sub(komootActivity.Date).Hours()) < 1 && math.Abs(stravaDistance-komootActivity.Distance) < 3000 {
+			return &komootActivity
+		}
+	}
+	return nil
+}
