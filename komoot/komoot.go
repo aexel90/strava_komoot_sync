@@ -130,31 +130,41 @@ func (k *KomootService) requestActivities(page int) (data *[]Activity, err error
 		return nil, err
 	}
 
+	for i := range toursResponse.Embedded.Tours {
+		setAccess(toursResponse, i)
+		err := setDate(toursResponse, i)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &toursResponse.Embedded.Tours, nil
+}
+
+func setAccess(toursResponse ToursResponse, i int) {
+	if toursResponse.Embedded.Tours[i].Status != statusFriends {
+		toursResponse.Embedded.Tours[i].Private = true
+	}
+}
+
+func setDate(toursResponse ToursResponse, i int) error {
 	// seen TimeFormats
 	// "2021-06-27T08:31:40.000Z"  		=>   2006-01-02T15:04:05.000Z
 	// "2021-06-27T10:30:43.716+02:00"	=>   2021-06-27T10:30:43.716+02:00
-	for i := range toursResponse.Embedded.Tours {
 
-		if toursResponse.Embedded.Tours[i].Status != statusFriends {
-			toursResponse.Embedded.Tours[i].Private = true
-		}
-
-		// 1.
-		komootActivityDate, err1 := time.Parse(ActivityDateFormat1, toursResponse.Embedded.Tours[i].DateString)
-		if err1 == nil {
-			toursResponse.Embedded.Tours[i].Date = komootActivityDate
-			continue
-		}
-
-		// 2.
-		komootActivityDate, err2 := time.Parse(ActivityDateFormat2, toursResponse.Embedded.Tours[i].DateString)
-		if err2 == nil {
-			toursResponse.Embedded.Tours[i].Date = komootActivityDate
-			continue
-		}
-		return nil, errors.New(err1.Error() + "\n" + err2.Error())
+	// 1.
+	komootActivityDate, err1 := time.Parse(ActivityDateFormat1, toursResponse.Embedded.Tours[i].DateString)
+	if err1 == nil {
+		toursResponse.Embedded.Tours[i].Date = komootActivityDate
+		return nil
 	}
-	return &toursResponse.Embedded.Tours, nil
+
+	// 2.
+	komootActivityDate, err2 := time.Parse(ActivityDateFormat2, toursResponse.Embedded.Tours[i].DateString)
+	if err2 == nil {
+		toursResponse.Embedded.Tours[i].Date = komootActivityDate
+		return nil
+	}
+	return errors.New(err1.Error() + "\n" + err2.Error())
 }
 
 func (k *KomootService) UpdateActivity(komootActivity *Activity, name string, public bool) error {
