@@ -12,16 +12,18 @@ import (
 	"github.com/aexel90/strava_komoot_sync/strava"
 )
 
-func main() {
+var (
+	komootEmail        = flag.String("komoot_email", "", "Komoot Email")
+	komootPassword     = flag.String("komoot_pw", "", "Komoot Password")
+	komootUserId       = flag.String("komoot_userid", "", "Komoot User ID")
+	stravaClientId     = flag.Int("strava_clientid", 0, "Strava Client ID")
+	stravaClientSecret = flag.String("strava_clientsecret", "", "Strava Client Secret")
+	stravaAthleteId    = flag.Int64("strava_athleteid", 0, "Strava Athlete ID")
+	stravaCode         = flag.String("strava_code", "", "Strava Code")
+	syncAll            = flag.Bool("sync_all", false, "Sync all activities")
+)
 
-	komootEmail := flag.String("komoot_email", "", "Komoot Email")
-	komootPassword := flag.String("komoot_pw", "", "Komoot Password")
-	komootUserId := flag.String("komoot_userid", "", "Komoot User ID")
-	stravaClientId := flag.Int("strava_clientid", 0, "Strava Client ID")
-	stravaClientSecret := flag.String("strava_clientsecret", "", "Strava Client Secret")
-	stravaAthleteId := flag.Int64("strava_athleteid", 0, "Strava Athlete ID")
-	stravaCode := flag.String("strava_code", "", "Strava Code")
-	syncAll := flag.Bool("sync_all", false, "Sync all activities")
+func main() {
 	flag.Parse()
 
 	komootService := komoot.NewKomootService(*komootEmail, *komootPassword, *komootUserId)
