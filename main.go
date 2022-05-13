@@ -54,7 +54,7 @@ func sync(stravaService *strava.StravaService, komootService *komoot.KomootServi
 	for _, stravaActivity := range stravaActivities {
 
 		log.Print("****************************************************************************")
-		log.Printf("STRAVA: Id: '%d' \t Name: '%s' Distance: '%f' Date: '%s'", stravaActivity.Id, stravaActivity.Name, stravaActivity.Distance, stravaActivity.StartDate.Format(constants.TimeFormat))
+		log.Printf("STRAVA: Id: '%d'\tDate: '%s' Name: '%s' Distance: '%f' Private: %t", stravaActivity.Id, stravaActivity.StartDate.Format(constants.TimeFormat), stravaActivity.Name, stravaActivity.Distance, stravaActivity.Private)
 
 		komootActivity := getActivityMatch(stravaActivity.StartDate, stravaActivity.Distance, komootActivities)
 		if komootActivity == nil {
@@ -62,15 +62,29 @@ func sync(stravaService *strava.StravaService, komootService *komoot.KomootServi
 			continue
 		}
 
-		log.Printf("KOMOOT: Id: '%d' \t Name: '%s' Distance: '%f' Date: '%s'", komootActivity.Id, komootActivity.Name, komootActivity.Distance, komootActivity.Date.Format(constants.TimeFormat))
+		log.Printf("KOMOOT: Id: '%d'\tDate: '%s' Name: '%s' Distance: '%f' Private: %t", komootActivity.Id, komootActivity.Date.Format(constants.TimeFormat), komootActivity.Name, komootActivity.Distance, komootActivity.Private)
 
+		//check name
+		var newKomootName string
 		if strings.TrimSpace(stravaActivity.Name) != strings.TrimSpace(komootActivity.Name) {
-			err := komootService.UpdateActivity(komootActivity, stravaActivity.Name)
-			if err != nil {
-				log.Printf("Error updating: %s", err)
-			}
-		} else {
-			log.Printf("... nothing to sync")
+			newKomootName = stravaActivity.Name
+		}
+
+		// check visibility
+		var public bool
+		if !stravaActivity.Private && komootActivity.Private {
+			public = true
+		}
+
+		// update
+		if newKomootName == "" && !public {
+			log.Print("Everything up to date")
+			continue
+		}
+
+		err := komootService.UpdateActivity(komootActivity, newKomootName, public)
+		if err != nil {
+			log.Printf("ERROR during update: %s", err)
 		}
 	}
 }

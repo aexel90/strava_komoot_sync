@@ -40,4 +40,5 @@ type Activity struct {
 	Sport        string
 	Query        string
 	Constitution int
+	Private      bool
 }

@@ -23,6 +23,7 @@ type KomootService struct {
 const komootSignInURL = "https://account.komoot.com/v1/signin"
 const komootTransferURL = "https://account.komoot.com/actions/transfer?type=signin"
 const komootApiURL = "https://www.komoot.de/api/v007"
+const statusFriends = "friends"
 
 const ActivityDateFormat1 = "2006-01-02T15:04:05.000Z"
 const ActivityDateFormat2 = "2006-01-02T15:04:05.000-07:00"
@@ -134,6 +135,10 @@ func (k *KomootService) requestActivities(page int) (data *[]Activity, err error
 	// "2021-06-27T10:30:43.716+02:00"	=>   2021-06-27T10:30:43.716+02:00
 	for i := range toursResponse.Embedded.Tours {
 
+		if toursResponse.Embedded.Tours[i].Status != statusFriends {
+			toursResponse.Embedded.Tours[i].Private = true
+		}
+
 		// 1.
 		komootActivityDate, err1 := time.Parse(ActivityDateFormat1, toursResponse.Embedded.Tours[i].DateString)
 		if err1 == nil {
@@ -152,17 +157,24 @@ func (k *KomootService) requestActivities(page int) (data *[]Activity, err error
 	return &toursResponse.Embedded.Tours, nil
 }
 
-func (k *KomootService) UpdateActivity(komootActivity *Activity, name string) error {
-	log.Printf("Updating KomootActivity '%d': Name (old): '%s' --> Name (new): '%s'", komootActivity.Id, komootActivity.Name, name)
+func (k *KomootService) UpdateActivity(komootActivity *Activity, name string, public bool) error {
 
 	httpClient, err := k.getHttpClient()
 	if err != nil {
 		return err
 	}
 
-	payload, err := json.Marshal(map[string]interface{}{
-		"name": name,
-	})
+	data := make(map[string]interface{}, 2)
+	if name != "" {
+		log.Printf("Updating KomootActivity '%d' - Name: '%s' --> '%s'", komootActivity.Id, komootActivity.Name, name)
+		data["name"] = name
+	}
+	if public {
+		log.Printf("Updating KomootActivity '%d' - Visibility: '%s' --> '%s'", komootActivity.Id, komootActivity.Status, statusFriends)
+		data["status"] = statusFriends
+	}
+
+	payload, err := json.Marshal(data)
 	if err != nil {
 		return err
 	}
