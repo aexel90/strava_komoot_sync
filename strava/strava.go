@@ -26,7 +26,7 @@ const port = 8080
 var c = make(chan *strava.AuthorizationResponse)
 var authenticator *strava.OAuthAuthenticator
 
-func NewStravaService(clientID int, clientSecret string, athleteId int64, code string) *StravaService {
+func NewStravaService(clientID int, clientSecret string, athleteId int64) *StravaService {
 	strava.ClientId = clientID
 	strava.ClientSecret = clientSecret
 
@@ -45,8 +45,8 @@ func NewStravaService(clientID int, clientSecret string, athleteId int64, code s
 
 func (s *StravaService) handleAuthorizationResponse(authResp *strava.AuthorizationResponse) {
 
-	log.Printf("AccessToken:\t\t'%s'", authResp.AccessToken)
-	log.Printf("RefreshToken:\t\t'%s'", authResp.RefreshToken)
+	log.Printf("AccessToken:\t\t%s", authResp.AccessToken)
+	log.Printf("RefreshToken:\t\t%s", authResp.RefreshToken)
 	log.Printf("AccessToken expires at:\t%s", time.Unix(authResp.ExpiresAt, 0).Format(constants.TimeFormat))
 	log.Printf("AccessToken expires in:\t%ds", authResp.ExpiresIn)
 
@@ -133,7 +133,11 @@ func (s *StravaService) getAcessToken() {
 	if err != nil {
 		panic(err)
 	}
+
+	http.HandleFunc("/", indexHandler)
 	http.HandleFunc(path, authenticator.HandlerFunc(oAuthSuccess, oAuthFailure))
+	fmt.Printf("Path: %s\n", path)
+	//http.HandleFunc(path, authenticator.HandlerFunc(oAuthSuccess, oAuthFailure))
 
 	// start the server
 	fmt.Printf("Accept Strava Access: %s\n", authenticator.AuthorizationURL("state1", strava.Permissions.ActivityReadAll, true))
@@ -141,6 +145,13 @@ func (s *StravaService) getAcessToken() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func indexHandler(w http.ResponseWriter, r *http.Request) {
+	// you should make this a template in your real application
+	fmt.Fprintf(w, `<a href="%s">`, authenticator.AuthorizationURL("state1", strava.Permissions.ActivityReadAll, true))
+	fmt.Fprint(w, `<img src="http://strava.github.io/api/images/ConnectWithStrava.png" />`)
+	fmt.Fprint(w, `</a>`)
 }
 
 func oAuthSuccess(auth *strava.AuthorizationResponse, w http.ResponseWriter, r *http.Request) {
