@@ -14,22 +14,20 @@ Strava --> Komoot
     $GOPATH/bin/strava_komoot_sync -h
 
     Usage of ./strava_komoot_sync:
-            -komoot_email string
-                    Komoot Email
-            -komoot_pw string
-                    Komoot Password
-            -komoot_userid string
-                    Komoot User ID
-            -strava_athleteid int
-                    Strava Athlete ID
-            -strava_clientid int
-                    Strava Client ID
-            -strava_clientsecret string
-                    Strava Client Secret
-            -strava_code string
-                    Strava Code
-            -sync_all
-                    Sync all activities
+        -komoot_email string
+                Komoot Email
+        -komoot_pw string
+                Komoot Password
+        -komoot_userid string
+                Komoot User ID
+        -strava_athleteid int
+                Strava Athlete ID
+        -strava_clientid int
+                Strava Client ID
+        -strava_clientsecret string
+                Strava Client Secret
+        -sync_all
+                Sync all activities
 
 ### Flag -sync_all
 - true:  all activities will be synched once and program terminates
