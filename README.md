@@ -7,8 +7,9 @@ Strava --> Komoot
 
 ## What is synced
 - Name of the activity
+- Visibility (private, public)
 
-## Execution
+## Binary
 
     $GOPATH/bin/strava_komoot_sync -h
 
@@ -30,12 +31,18 @@ Strava --> Komoot
             -sync_all
                     Sync all activities
 
-## Flag -sync_all
+### Flag -sync_all
 - true:  all activities will be synched once and program terminates
 - false: the last 30 Strava activities will be synched each 5 minutes
 
+## Docker Container
+### ... via Dockerfile
+
+        docker build --tag fritzbox-prometheus-exporter:latest .
+
+        docker run -d -p 8080:8080 --name stravakomootsync --rm -e 'KOMOOT_EMAIL=*****' -e 'KOMOOT_PWD=*****' -e 'KOMOOT_USERID=*****' -e 'STRAVA_CLIENTID=*****' -e 'STRAVA_CLIENTSECRET=*****' -e 'STRAVA_ATHLETEID=*****' stravakomootsync
+
 ## ToDos
-- store AccessToken across Sessions
+- store AccessToken accross Sessions
 - sync pics
-- sync visibility
-- docker config
+- docker compose
