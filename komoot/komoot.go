@@ -115,6 +115,10 @@ func (k *KomootService) requestActivities(page int) (data *[]Activity, err error
 
 	status := fmt.Sprintf("%s: %s", url, resp.Status)
 	if resp.StatusCode != http.StatusOK {
+
+		// clear httpClient
+		k.httpClient = nil
+
 		return nil, errors.New(status)
 	}
 	log.Print(status)

@@ -34,7 +34,7 @@ func main() {
 		return
 	}
 
-	// sync last 30 activities within endless loop
+	// sync endless loop
 	for {
 		sync(stravaService, komootService, false)
 		time.Sleep(5 * time.Minute)
@@ -45,14 +45,19 @@ func sync(stravaService *strava.StravaService, komootService *komoot.KomootServi
 
 	stravaActivities, err := stravaService.GetActivities(syncAll)
 	if err != nil {
-		panic(err)
+		// panic(err)
+		log.Printf("STRAVA - GetActivities: %s", err)
+		return
 	}
 
 	komootActivities, err := komootService.GetActivities(syncAll)
 	if err != nil {
-		panic(err)
+		// panic(err)
+		log.Printf("KOMOOT - GetActivities: %s", err)
+		return
 	}
 
+	log.Print("****************************************************************************")
 	for _, stravaActivity := range stravaActivities {
 
 		log.Print("****************************************************************************")
@@ -80,13 +85,12 @@ func sync(stravaService *strava.StravaService, komootService *komoot.KomootServi
 
 		// update
 		if newKomootName == "" && !public {
-			log.Print("Everything up to date")
 			continue
-		}
-
-		err := komootService.UpdateActivity(komootActivity, newKomootName, public)
-		if err != nil {
-			log.Printf("ERROR during update: %s", err)
+		} else {
+			err := komootService.UpdateActivity(komootActivity, newKomootName, public)
+			if err != nil {
+				log.Printf("ERROR during update: %s", err)
+			}
 		}
 	}
 }
