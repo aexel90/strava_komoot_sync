@@ -1,9 +1,7 @@
-# strava_komoot_sync
+# StravaKomootSync
 
-Activity Synchronization between Strava and Komoot
-
-## Synchronization direction
-Strava --> Komoot
+Activity Synchronization between Strava and Komoot.
+Synchronization direction: Strava --> Komoot
 
 ## What is synced
 - Name of the activity
@@ -45,4 +43,3 @@ Strava --> Komoot
 
 ## ToDos
 - sync pics
-- docker compose
