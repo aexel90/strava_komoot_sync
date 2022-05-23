@@ -1,0 +1,14 @@
+version: '3.4'
+
+services:
+  stravakomootsync:
+    image: stravakomootsync
+    build:
+      context: .
+      dockerfile: ./Dockerfile.multistage
+    restart: unless-stopped
+    container_name: stravakomootsync
+    ports:
+      - 8080:8080
+    env_file:
+      - .env
