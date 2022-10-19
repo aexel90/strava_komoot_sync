@@ -12,6 +12,8 @@ services:
       - 8080:8080
     env_file:
       - .env
+    volumes:
+      - ./token.json:/token.json
     logging:
         driver: "json-file"
         options:
