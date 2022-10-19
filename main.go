@@ -45,15 +45,13 @@ func sync(stravaService *strava.StravaService, komootService *komoot.KomootServi
 
 	stravaActivities, err := stravaService.GetActivities(syncAll)
 	if err != nil {
-		// panic(err)
-		log.Printf("STRAVA - GetActivities: %s", err)
+		log.Printf("STRAVA - GetActivities ERROR: %s", err)
 		return
 	}
 
 	komootActivities, err := komootService.GetActivities(syncAll)
 	if err != nil {
-		// panic(err)
-		log.Printf("KOMOOT - GetActivities: %s", err)
+		log.Printf("KOMOOT - GetActivities ERROR: %s", err)
 		return
 	}
 
@@ -89,7 +87,7 @@ func sync(stravaService *strava.StravaService, komootService *komoot.KomootServi
 		} else {
 			err := komootService.UpdateActivity(komootActivity, newKomootName, public)
 			if err != nil {
-				log.Printf("ERROR during update: %s", err)
+				log.Printf("KOMOOT - Update Activity ERROR: %s", err)
 			}
 		}
 	}

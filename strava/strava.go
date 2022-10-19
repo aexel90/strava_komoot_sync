@@ -3,6 +3,7 @@ package strava
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"time"
@@ -12,16 +13,17 @@ import (
 )
 
 type StravaService struct {
-	clientID     int
-	clientSecret string
-	athleteId    int64
-	accessToken  string
-	refreshToken string
-	expiresAt    int64
-	expiresIn    int
+	ClientID     int
+	ClientSecret string
+	AthleteId    int64
+	AccessToken  string
+	RefreshToken string
+	ExpiresAt    int64
+	ExpiresIn    int
 }
 
 const port = 8080
+const tokenFile = "token.json"
 
 var c = make(chan *strava.AuthorizationResponse)
 var authenticator *strava.OAuthAuthenticator
@@ -31,9 +33,9 @@ func NewStravaService(clientID int, clientSecret string, athleteId int64) *Strav
 	strava.ClientSecret = clientSecret
 
 	s := StravaService{}
-	s.clientID = clientID
-	s.clientSecret = clientSecret
-	s.athleteId = athleteId
+	s.ClientID = clientID
+	s.ClientSecret = clientSecret
+	s.AthleteId = athleteId
 
 	authenticator = &strava.OAuthAuthenticator{
 		CallbackURL:            fmt.Sprintf("http://localhost:%d/exchange_token", port),
@@ -45,15 +47,22 @@ func NewStravaService(clientID int, clientSecret string, athleteId int64) *Strav
 
 func (s *StravaService) handleAuthorizationResponse(authResp *strava.AuthorizationResponse) {
 
-	log.Printf("AccessToken:\t\t%s", authResp.AccessToken)
-	log.Printf("RefreshToken:\t\t%s", authResp.RefreshToken)
-	log.Printf("AccessToken expires at:\t%s", time.Unix(authResp.ExpiresAt, 0).Format(constants.TimeFormat))
-	log.Printf("AccessToken expires in:\t%ds", authResp.ExpiresIn)
+	s.AccessToken = authResp.AccessToken
+	s.RefreshToken = authResp.RefreshToken
+	s.ExpiresAt = authResp.ExpiresAt
+	s.ExpiresIn = authResp.ExpiresIn
 
-	s.accessToken = authResp.AccessToken
-	s.refreshToken = authResp.RefreshToken
-	s.expiresAt = authResp.ExpiresAt
-	s.expiresIn = authResp.ExpiresIn
+	s.printTokenDetails()
+	s.storeTokensToFile()
+}
+
+func (s *StravaService) printTokenDetails() {
+
+	log.Printf("AccessToken:\t\t%s", s.AccessToken)
+	log.Printf("RefreshToken:\t\t%s", s.RefreshToken)
+	log.Printf("AccessToken expires at:\t%s", time.Unix(s.ExpiresAt, 0).Format(constants.TimeFormat))
+	log.Printf("AccessToken expires in:\t%ds", s.ExpiresIn)
+
 }
 
 func (s *StravaService) GetActivities(syncAll bool) ([]*strava.ActivitySummary, error) {
@@ -69,7 +78,7 @@ func (s *StravaService) GetActivities(syncAll bool) ([]*strava.ActivitySummary, 
 		var allResults []*strava.ActivitySummary
 		i := 1
 		for {
-			pageResult, err := strava.NewAthletesService(client).ListActivities(s.athleteId).Page(i).Do()
+			pageResult, err := strava.NewAthletesService(client).ListActivities(s.AthleteId).Page(i).Do()
 
 			if err != nil {
 				return nil, err
@@ -85,7 +94,7 @@ func (s *StravaService) GetActivities(syncAll bool) ([]*strava.ActivitySummary, 
 		return allResults, nil
 
 	} else {
-		return strava.NewAthletesService(client).ListActivities(s.athleteId).Page(1).Do()
+		return strava.NewAthletesService(client).ListActivities(s.AthleteId).Page(1).Do()
 	}
 }
 
@@ -99,26 +108,29 @@ func (s *StravaService) GetActivityDetails(activityId int64) (*strava.ActivityDe
 
 func (s *StravaService) getStravaClient() (*strava.Client, error) {
 
-	if s.accessToken == "" {
+	if s.AccessToken == "" {
+		s.loadTokensFromFile()
+	}
+
+	if s.AccessToken == "" {
 		go s.getAcessToken()
 		s.handleAuthorizationResponse(<-c)
 	}
-	log.Printf("AccessToken expires at:\t%s", time.Unix(s.expiresAt, 0).Format(constants.TimeFormat))
 
-	if s.expiresAt < time.Now().Unix() {
+	if s.ExpiresAt < time.Now().Unix() {
 		err := s.refreshAccessToken()
 		if err != nil {
 			return nil, err
 		}
 	}
-	return strava.NewClient(s.accessToken), nil
+	return strava.NewClient(s.AccessToken), nil
 }
 
 func (s *StravaService) refreshAccessToken() error {
 
 	log.Print("Refreshing AccessToken ...")
 
-	newRefreshToken, err := authenticator.RefreshAuthorize(s.refreshToken, nil)
+	newRefreshToken, err := authenticator.RefreshAuthorize(s.RefreshToken, nil)
 	if err != nil {
 		return err
 	}
@@ -136,10 +148,7 @@ func (s *StravaService) getAcessToken() {
 
 	http.HandleFunc("/", indexHandler)
 	http.HandleFunc(path, authenticator.HandlerFunc(oAuthSuccess, oAuthFailure))
-	fmt.Printf("Path: %s\n", path)
-	//http.HandleFunc(path, authenticator.HandlerFunc(oAuthSuccess, oAuthFailure))
 
-	// start the server
 	fmt.Printf("Accept Strava Access: %s\n", authenticator.AuthorizationURL("state1", strava.Permissions.ActivityReadAll, true))
 	err = http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 	if err != nil {
@@ -147,8 +156,40 @@ func (s *StravaService) getAcessToken() {
 	}
 }
 
+func (s *StravaService) loadTokensFromFile() {
+	jsonData, err := ioutil.ReadFile(tokenFile)
+	if err != nil {
+		log.Printf("File '%s' does not exist.", tokenFile)
+		return
+	}
+
+	err = json.Unmarshal(jsonData, s)
+	if err != nil {
+		log.Printf("Error parsing tokenFile: %v", err)
+		return
+	}
+
+	log.Print("Token read from tokenFile.")
+	s.printTokenDetails()
+}
+
+func (s *StravaService) storeTokensToFile() {
+	jsonData, err := json.MarshalIndent(s, "", " ")
+	if err != nil {
+		log.Printf("Error creating json data to store Token into file: %v", jsonData)
+		return
+	}
+
+	err = ioutil.WriteFile(tokenFile, jsonData, 0644)
+	if err != nil {
+		log.Printf("Error writing tokenFile: %v", err)
+		return
+	}
+
+	log.Print("Token stored in tokenFile.")
+}
+
 func indexHandler(w http.ResponseWriter, r *http.Request) {
-	// you should make this a template in your real application
 	fmt.Fprintf(w, `<a href="%s">`, authenticator.AuthorizationURL("state1", strava.Permissions.ActivityReadAll, true))
 	fmt.Fprint(w, `<img src="http://strava.github.io/api/images/ConnectWithStrava.png" />`)
 	fmt.Fprint(w, `</a>`)
@@ -170,7 +211,6 @@ func oAuthSuccess(auth *strava.AuthorizationResponse, w http.ResponseWriter, r *
 func oAuthFailure(err error, w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Authorization Failure:\n")
 
-	// some standard error checking
 	if err == strava.OAuthAuthorizationDeniedErr {
 		fmt.Fprint(w, "The user clicked the 'Do not Authorize' button on the previous page.\n")
 		fmt.Fprint(w, "This is the main error your application should handle.")
@@ -185,5 +225,4 @@ func oAuthFailure(err error, w http.ResponseWriter, r *http.Request) {
 	}
 
 	c <- &strava.AuthorizationResponse{}
-
 }
