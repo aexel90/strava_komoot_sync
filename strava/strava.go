@@ -65,6 +65,20 @@ func (s *StravaService) printTokenDetails() {
 
 }
 
+func (s *StravaService) UpdateActivity(stravaActivity *strava.ActivitySummary) error {
+	client, err := s.getStravaClient()
+	if err != nil {
+		return err
+	}
+
+	stravaActivitiesPutCall := strava.NewActivitiesService(client).Update(stravaActivity.Id)
+	stravaActivitiesPutCall.Gear(stravaActivity.GearId)
+	//stravaActivitiesPutCall.Private(false) - still not supported :(
+
+	_, err = stravaActivitiesPutCall.Do()
+	return err
+}
+
 func (s *StravaService) GetActivities(syncAll bool) ([]*strava.ActivitySummary, error) {
 	client, err := s.getStravaClient()
 	if err != nil {
@@ -149,7 +163,8 @@ func (s *StravaService) getAcessToken() {
 	http.HandleFunc("/", indexHandler)
 	http.HandleFunc(path, authenticator.HandlerFunc(oAuthSuccess, oAuthFailure))
 
-	fmt.Printf("Accept Strava Access: %s\n", authenticator.AuthorizationURL("state1", strava.Permissions.ActivityReadAll, true))
+	//fmt.Printf("Accept Strava Access: %s\n", authenticator.AuthorizationURL("state1", strava.Permissions.ActivityReadAll, true))
+	fmt.Printf("Accept Strava Access: %s\n", authenticator.AuthorizationURL("state1", strava.Permissions.ActivityReadAll+","+strava.Permissions.ActivityWrite, true))
 	err = http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 	if err != nil {
 		panic(err)

@@ -14,5 +14,9 @@ EXPOSE 8080
 ### SHELL FORM
 #CMD "strava_komoot_sync" "-komoot_email" ${KOMOOT_EMAIL} "-komoot_pw" ${KOMOOT_PWD} "-komoot_userid" ${KOMOOT_USERID} "-strava_clientid" ${STRAVA_CLIENTID} "-strava_clientsecret" ${STRAVA_CLIENTSECRET} "-strava_athleteid" ${STRAVA_ATHLETEID}
 
-### EXEC FORM
-ENTRYPOINT [ "sh", "-c", "/strava_komoot_sync -komoot_email ${KOMOOT_EMAIL} -komoot_pw ${KOMOOT_PWD} -komoot_userid ${KOMOOT_USERID} -strava_clientid ${STRAVA_CLIENTID} -strava_clientsecret ${STRAVA_CLIENTSECRET} -strava_athleteid ${STRAVA_ATHLETEID}" ]
+### EXEC FORM without virtual ride correction
+#ENTRYPOINT [ "sh", "-c", "/strava_komoot_sync -komoot_email ${KOMOOT_EMAIL} -komoot_pw ${KOMOOT_PWD} -komoot_userid ${KOMOOT_USERID} -strava_clientid ${STRAVA_CLIENTID} -strava_clientsecret ${STRAVA_CLIENTSECRET} -strava_athleteid ${STRAVA_ATHLETEID}" ]
+
+
+### EXEC FORM without virtual ride correction
+ENTRYPOINT [ "sh", "-c", "/strava_komoot_sync -komoot_email ${KOMOOT_EMAIL} -komoot_pw ${KOMOOT_PWD} -komoot_userid ${KOMOOT_USERID} -strava_clientid ${STRAVA_CLIENTID} -strava_clientsecret ${STRAVA_CLIENTSECRET} -strava_athleteid ${STRAVA_ATHLETEID} -strava_virtualRide_gearid ${STRAVA_VIRT_GEARID}" ]
