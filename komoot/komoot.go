@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/http/cookiejar"
@@ -14,10 +14,11 @@ import (
 )
 
 type KomootService struct {
-	email      string
-	password   string
-	userid     string
-	httpClient *http.Client
+	email            string
+	password         string
+	userid           string
+	clientLoginAlive bool
+	httpClient       *http.Client
 }
 
 const komootSignInURL = "https://account.komoot.com/v1/signin"
@@ -29,29 +30,33 @@ const ActivityDateFormat1 = "2006-01-02T15:04:05.000Z"
 const ActivityDateFormat2 = "2006-01-02T15:04:05.000-07:00"
 
 func NewKomootService(email string, password string, userid string) *KomootService {
-	return &KomootService{email, password, userid, nil}
+	return &KomootService{email, password, userid, false, nil}
 }
 
 func (k *KomootService) getHttpClient() (*http.Client, error) {
 
 	if k.httpClient == nil {
-		// Cookie Setup
+
 		jar, err := cookiejar.New(nil)
 		if err != nil {
 			return nil, fmt.Errorf("got error while creating cookie jar: %s", err)
 		}
-		client := http.Client{Jar: jar}
-		log.Println("Cookie initialized")
+		k.httpClient = &http.Client{Jar: jar}
+
+	}
+	if !k.clientLoginAlive {
 
 		//SignIn
-		resp, err := client.PostForm(komootSignInURL, url.Values{
+		resp, err := k.httpClient.PostForm(komootSignInURL, url.Values{
 			"password": {k.password},
 			"email":    {k.email},
 		})
 		if err != nil {
 			return nil, err
 		}
+		io.Copy(io.Discard, resp.Body)
 		defer resp.Body.Close()
+
 		status := fmt.Sprintf("%s: %s", komootSignInURL, resp.Status)
 		if resp.StatusCode != http.StatusOK {
 			return nil, errors.New(status)
@@ -59,17 +64,20 @@ func (k *KomootService) getHttpClient() (*http.Client, error) {
 		log.Print(status)
 
 		//Tranfer
-		resp, err = client.Get(komootTransferURL)
+		resp, err = k.httpClient.Get(komootTransferURL)
 		if err != nil {
 			return nil, err
 		}
+		io.Copy(io.Discard, resp.Body)
+		defer resp.Body.Close()
+
 		status = fmt.Sprintf("%s: %s", komootTransferURL, resp.Status)
 		if resp.StatusCode != http.StatusOK {
 			return nil, errors.New(status)
 		}
 		log.Print(status)
 
-		k.httpClient = &client
+		k.clientLoginAlive = true
 	}
 	return k.httpClient, nil
 }
@@ -111,22 +119,19 @@ func (k *KomootService) requestActivities(page int) (data *[]Activity, err error
 	if err != nil {
 		return nil, err
 	}
+
 	defer resp.Body.Close()
-
-	status := fmt.Sprintf("%s: %s", url, resp.Status)
-	if resp.StatusCode != http.StatusOK {
-
-		// clear httpClient
-		k.httpClient = nil
-
-		return nil, errors.New(status)
-	}
-	log.Print(status)
-
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
+
+	status := fmt.Sprintf("%s: %s", url, resp.Status)
+	if resp.StatusCode != http.StatusOK {
+		k.clientLoginAlive = false
+		return nil, errors.New(status)
+	}
+	log.Print(status)
 
 	var toursResponse ToursResponse
 	err = json.Unmarshal(body, &toursResponse)
@@ -204,10 +209,9 @@ func (k *KomootService) UpdateActivity(komootActivity *Activity, name string, pu
 	if err != nil {
 		return err
 	}
-
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}

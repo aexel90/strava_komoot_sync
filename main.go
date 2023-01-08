@@ -65,6 +65,7 @@ func sync(stravaService *strava.StravaService, komootService *komoot.KomootServi
 		log.Print("****************************************************************************")
 		log.Printf("STRAVA: Id: '%d'\tDate: '%s' Name: '%s' Distance: '%f' Private: %t", stravaActivity.Id, stravaActivity.StartDate.Format(constants.TimeFormat), stravaActivity.Name, stravaActivity.Distance, stravaActivity.Private)
 
+		// VIRTUAL RIDEs
 		if stravaVirtualRideGearId != "" && stravaActivity.Type == stravaLib.ActivityTypes.VirtualRide {
 
 			log.Printf("STRAVA: Id: '%d'\tType: '%s' GearId: '%s'", stravaActivity.Id, stravaActivity.Type, stravaActivity.GearId)
@@ -76,7 +77,7 @@ func sync(stravaService *strava.StravaService, komootService *komoot.KomootServi
 				updateRequired = true
 			}
 
-			// still not supported :(
+			// set private --> public - still not supported :(
 			/*if stravaActivity.Private {
 				stravaActivity.Private = false
 				updateRequired = true
@@ -89,6 +90,7 @@ func sync(stravaService *strava.StravaService, komootService *komoot.KomootServi
 				}
 			}
 
+			// ALL OTHER RIDES
 		} else {
 
 			komootActivity := getActivityMatch(stravaActivity.StartDate, stravaActivity.Distance, komootActivities)
@@ -127,8 +129,7 @@ func sync(stravaService *strava.StravaService, komootService *komoot.KomootServi
 func getActivityMatch(stravaDate time.Time, stravaDistance float64, komootActivities *[]komoot.Activity) *komoot.Activity {
 
 	for _, komootActivity := range *komootActivities {
-		// distance tolerance 3km
-		// date tolerance 1 hour
+		// distance tolerance 3km - date tolerance 1 hour
 		if math.Abs(stravaDate.Sub(komootActivity.Date).Hours()) < 1 && math.Abs(stravaDistance-komootActivity.Distance) < 3000 {
 			return &komootActivity
 		}

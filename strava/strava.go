@@ -3,9 +3,9 @@ package strava
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	strava "github.com/aexel90/go.strava"
@@ -172,7 +172,7 @@ func (s *StravaService) getAcessToken() {
 }
 
 func (s *StravaService) loadTokensFromFile() {
-	jsonData, err := ioutil.ReadFile(tokenFile)
+	jsonData, err := os.ReadFile(tokenFile)
 	if err != nil {
 		log.Printf("File '%s' does not exist.", tokenFile)
 		return
@@ -195,7 +195,7 @@ func (s *StravaService) storeTokensToFile() {
 		return
 	}
 
-	err = ioutil.WriteFile(tokenFile, jsonData, 0644)
+	err = os.WriteFile(tokenFile, jsonData, 0644)
 	if err != nil {
 		log.Printf("Error writing tokenFile: %v", err)
 		return
