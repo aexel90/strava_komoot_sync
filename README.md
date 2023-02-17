@@ -33,10 +33,10 @@ Synchronization direction: Strava --> Komoot
 
 ## Docker Container
 ### ... via Dockerfile
-        docker build --rm --restart unless-stopped --tag stravakomootsync:latest .
-        docker build --rm --restart unless-stopped --tag stravakomootsync:latest -f Dockerfile.multistage .
+        docker build --tag stravakomootsync:latest .
+        docker build --tag stravakomootsync:latest -f Dockerfile.multistage .
 
-        docker run -d -p 8080:8080 --name stravakomootsync --rm -e 'KOMOOT_EMAIL=*****' -e 'KOMOOT_PWD=*****' -e 'KOMOOT_USERID=*****' -e 'STRAVA_CLIENTID=*****' -e 'STRAVA_CLIENTSECRET=*****' -e 'STRAVA_ATHLETEID=*****' stravakomootsync
+        docker run -d -p 8080:8080 --name stravakomootsync --restart unless-stopped --rm -e 'KOMOOT_EMAIL=*****' -e 'KOMOOT_PWD=*****' -e 'KOMOOT_USERID=*****' -e 'STRAVA_CLIENTID=*****' -e 'STRAVA_CLIENTSECRET=*****' -e 'STRAVA_ATHLETEID=*****' stravakomootsync
 
 ### ... via docker-compose
         docker-compose up -d --build
