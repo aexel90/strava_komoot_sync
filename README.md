@@ -1,17 +1,21 @@
 # StravaKomootSync
 
+[![Docker Image CI](https://github.com/aexel90/strava_komoot_sync/actions/workflows/docker-image.yml/badge.svg)](https://github.com/aexel90/strava_komoot_sync/actions/workflows/docker-image.yml)
+
 Activity Synchronization between Strava and Komoot.
 Synchronization direction: Strava --> Komoot
 
-## What is synced
+What is synced:
 - Name of the activity
 - Visibility (private, public)
 
-## Binary
+## Script Parameter
 
     $GOPATH/bin/strava_komoot_sync -h
 
     Usage of ./strava_komoot_sync:
+        -debug
+    	        Log debug level
         -komoot_email string
                 Komoot Email
         -komoot_pw string
@@ -24,22 +28,24 @@ Synchronization direction: Strava --> Komoot
                 Strava Client ID
         -strava_clientsecret string
                 Strava Client Secret
+        -strava_virtualRide_gearid string
+    	        Strava Virtual Ride GearID
         -sync_all
-                Sync all activities
+    	        Sync all activities
 
-### Flag -sync_all
+Flag "-sync_all"
 - true:  all activities will be synched once and program terminates
-- false: the last 30 Strava activities will be synched each 5 minutes
+- false: the last 30 Strava activities will be synched
 
-## Docker Container
+## Run Docker Container
 ### ... via Dockerfile
         docker build --tag stravakomootsync:latest .
-        docker build --tag stravakomootsync:latest -f Dockerfile.multistage .
-
-        docker run -d -p 8080:8080 --name stravakomootsync --restart unless-stopped --rm -e 'KOMOOT_EMAIL=*****' -e 'KOMOOT_PWD=*****' -e 'KOMOOT_USERID=*****' -e 'STRAVA_CLIENTID=*****' -e 'STRAVA_CLIENTSECRET=*****' -e 'STRAVA_ATHLETEID=*****' stravakomootsync
+        docker run -d -p 8080:8080 --name stravakomootsync --restart unless-stopped -e 'KOMOOT_EMAIL=*****' -e 'KOMOOT_PWD=*****' -e 'KOMOOT_USERID=*****' -e 'STRAVA_CLIENTID=*****' -e 'STRAVA_CLIENTSECRET=*****' -e 'STRAVA_ATHLETEID=*****' -e 'STRAVA_VIRT_GEARID=*****' stravakomootsync
 
 ### ... via docker-compose
-        docker-compose up -d --build
+        cp .env.template .env
+        vi .env
+        docker compose up -d
 
-## ToDos
+## TODOs
 - sync pics

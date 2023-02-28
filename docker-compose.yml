@@ -2,12 +2,9 @@ version: '3.4'
 
 services:
   stravakomootsync:
-    image: stravakomootsync
-    build:
-      context: .
-      dockerfile: ./Dockerfile
-    restart: unless-stopped
+    image: ghcr.io/aexel90/strava_komoot_sync/image:latest
     container_name: stravakomootsync
+    restart: on-failure:2
     ports:
       - 8080:8080
     env_file:
