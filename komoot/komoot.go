@@ -6,11 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type KomootService struct {
@@ -61,7 +62,7 @@ func (k *KomootService) getHttpClient() (*http.Client, error) {
 		if resp.StatusCode != http.StatusOK {
 			return nil, errors.New(status)
 		}
-		log.Print(status)
+		log.Debug(status)
 
 		//Tranfer
 		resp, err = k.httpClient.Get(komootTransferURL)
@@ -75,7 +76,7 @@ func (k *KomootService) getHttpClient() (*http.Client, error) {
 		if resp.StatusCode != http.StatusOK {
 			return nil, errors.New(status)
 		}
-		log.Print(status)
+		log.Debug(status)
 
 		k.clientLoginAlive = true
 	}
@@ -94,7 +95,7 @@ func (k *KomootService) GetActivities(syncAll bool) (data *[]Activity, err error
 				return nil, err
 			}
 			allResults = append(allResults, *pageResult...)
-			log.Printf("KomootRequest Page%d:\t%d results (sum: %d)", i, len(*pageResult), len(allResults))
+			log.Debugf("KomootRequest Page%d:\t%d results (sum: %d)", i, len(*pageResult), len(allResults))
 
 			if len(*pageResult) == 0 {
 				break
@@ -131,7 +132,7 @@ func (k *KomootService) requestActivities(page int) (data *[]Activity, err error
 		k.clientLoginAlive = false
 		return nil, errors.New(status)
 	}
-	log.Print(status)
+	log.Debug(status)
 
 	var toursResponse ToursResponse
 	err = json.Unmarshal(body, &toursResponse)
@@ -185,11 +186,11 @@ func (k *KomootService) UpdateActivity(komootActivity *Activity, name string, pu
 
 	data := make(map[string]interface{}, 2)
 	if name != "" {
-		log.Printf("Updating KomootActivity '%d' - Name: '%s' --> '%s'", komootActivity.ID, komootActivity.Name, name)
+		log.Debugf("Updating KomootActivity '%d' - Name: '%s' --> '%s'", komootActivity.ID, komootActivity.Name, name)
 		data["name"] = name
 	}
 	if public {
-		log.Printf("Updating KomootActivity '%d' - Visibility: '%s' --> '%s'", komootActivity.ID, komootActivity.Status, statusFriends)
+		log.Debugf("Updating KomootActivity '%d' - Visibility: '%s' --> '%s'", komootActivity.ID, komootActivity.Status, statusFriends)
 		data["status"] = statusFriends
 	}
 
@@ -220,7 +221,7 @@ func (k *KomootService) UpdateActivity(komootActivity *Activity, name string, pu
 	if resp.StatusCode != http.StatusOK {
 		return errors.New(status + string(body))
 	}
-	log.Print(status)
+	log.Debug(status)
 
 	return nil
 }

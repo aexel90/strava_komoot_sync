@@ -2,16 +2,17 @@ package main
 
 import (
 	"flag"
-	"log"
 	"math"
 	"strings"
 	"time"
 
-	stravaLib "github.com/aexel90/go.strava"
-
 	"github.com/aexel90/strava_komoot_sync/constants"
 	"github.com/aexel90/strava_komoot_sync/komoot"
 	"github.com/aexel90/strava_komoot_sync/strava"
+
+	stravaLib "github.com/aexel90/go.strava"
+	log "github.com/sirupsen/logrus"
+	easy "github.com/t-tomalak/logrus-easy-formatter"
 )
 
 var (
@@ -21,54 +22,54 @@ var (
 	stravaClientId          = flag.Int("strava_clientid", 0, "Strava Client ID")
 	stravaClientSecret      = flag.String("strava_clientsecret", "", "Strava Client Secret")
 	stravaAthleteId         = flag.Int64("strava_athleteid", 0, "Strava Athlete ID")
-	syncAll                 = flag.Bool("sync_all", false, "Sync all activities")
 	stravaVirtualRideGearId = flag.String("strava_virtualRide_gearid", "", "Strava Virtual Ride GearID")
+	debug                   = flag.Bool("debug", false, "Log debug level")
+	syncAll                 = flag.Bool("sync_all", false, "Sync all activities")
 )
 
 func main() {
+	log.SetFormatter(&easy.Formatter{
+		TimestampFormat: "2006-01-02 15:04:05",
+		LogFormat:       "%time%: [%lvl%] %msg%\n"},
+	)
+
 	flag.Parse()
+
+	if *debug {
+		log.SetLevel(log.DebugLevel)
+	}
 
 	komootService := komoot.NewKomootService(*komootEmail, *komootPassword, *komootUserId)
 	stravaService := strava.NewStravaService(*stravaClientId, *stravaClientSecret, *stravaAthleteId)
 
-	// sync all and quit
-	if *syncAll {
-		sync(stravaService, komootService, *syncAll, *stravaVirtualRideGearId)
-		return
-	}
-
-	// sync endless loop
-	for {
-		sync(stravaService, komootService, false, *stravaVirtualRideGearId)
-		time.Sleep(5 * time.Minute)
-	}
+	sync(stravaService, komootService, *syncAll, *stravaVirtualRideGearId)
 }
 
 func sync(stravaService *strava.StravaService, komootService *komoot.KomootService, syncAll bool, stravaVirtualRideGearId string) {
 
-	log.Print("******************************* NEW SYNC LOOP ******************************")
+	log.Info("******************************* NEW SYNC LOOP ******************************")
 
 	stravaActivities, err := stravaService.GetActivities(syncAll)
 	if err != nil {
-		log.Printf("STRAVA - GetActivities ERROR: %s", err)
+		log.Fatalf("STRAVA - GetActivities ERROR: %s", err)
 		return
 	}
 
 	komootActivities, err := komootService.GetActivities(syncAll)
 	if err != nil {
-		log.Printf("KOMOOT - GetActivities ERROR: %s", err)
+		log.Fatalf("KOMOOT - GetActivities ERROR: %s", err)
 		return
 	}
 
 	for _, stravaActivity := range stravaActivities {
 
-		log.Print("****************************************************************************")
-		log.Printf("STRAVA: Id: '%d'\tDate: '%s' Name: '%s' Distance: '%f' Private: %t", stravaActivity.Id, stravaActivity.StartDate.Format(constants.TimeFormat), stravaActivity.Name, stravaActivity.Distance, stravaActivity.Private)
+		log.Debug("****************************************************************************")
+		log.Debugf("STRAVA: Id: '%d'\tDate: '%s' Name: '%s' Distance: '%f' Private: %t", stravaActivity.Id, stravaActivity.StartDate.Format(constants.TimeFormat), stravaActivity.Name, stravaActivity.Distance, stravaActivity.Private)
 
 		// VIRTUAL RIDEs
 		if stravaVirtualRideGearId != "" && stravaActivity.Type == stravaLib.ActivityTypes.VirtualRide {
 
-			log.Printf("STRAVA: Id: '%d'\tType: '%s' GearId: '%s'", stravaActivity.Id, stravaActivity.Type, stravaActivity.GearId)
+			log.Debugf("STRAVA: Id: '%d'\tType: '%s' GearId: '%s'", stravaActivity.Id, stravaActivity.Type, stravaActivity.GearId)
 
 			var updateRequired bool
 
@@ -86,7 +87,7 @@ func sync(stravaService *strava.StravaService, komootService *komoot.KomootServi
 			if updateRequired {
 				err := stravaService.UpdateActivity(stravaActivity)
 				if err != nil {
-					log.Printf("STRAVA: Activity Update ERROR: %s", err)
+					log.Fatalf("STRAVA: Activity Update ERROR: %s", err)
 				}
 			}
 
@@ -95,11 +96,11 @@ func sync(stravaService *strava.StravaService, komootService *komoot.KomootServi
 
 			komootActivity := getActivityMatch(stravaActivity.StartDate, stravaActivity.Distance, komootActivities)
 			if komootActivity == nil {
-				log.Print("KOMOOT: no activity found")
+				log.Debug("KOMOOT: no activity found")
 				continue
 			}
 
-			log.Printf("KOMOOT: Id: '%d'\tDate: '%s' Name: '%s' Distance: '%f' Private: %t", komootActivity.ID, komootActivity.Date.Format(constants.TimeFormat), komootActivity.Name, komootActivity.Distance, komootActivity.Private)
+			log.Debugf("KOMOOT: Id: '%d'\tDate: '%s' Name: '%s' Distance: '%f' Private: %t", komootActivity.ID, komootActivity.Date.Format(constants.TimeFormat), komootActivity.Name, komootActivity.Distance, komootActivity.Private)
 
 			//check komoot name
 			var newKomootName string
@@ -119,7 +120,9 @@ func sync(stravaService *strava.StravaService, komootService *komoot.KomootServi
 			} else {
 				err := komootService.UpdateActivity(komootActivity, newKomootName, public)
 				if err != nil {
-					log.Printf("KOMOOT - Update Activity ERROR: %s", err)
+					log.Fatalf("KOMOOT - Update Activity ERROR: %s", err)
+				} else {
+					log.Infof("KOMOOT update success: Id: '%d'\tDate: '%s' Name: '%s' Distance: '%f' Private: %t", komootActivity.ID, komootActivity.Date.Format(constants.TimeFormat), komootActivity.Name, komootActivity.Distance, komootActivity.Private)
 				}
 			}
 		}
