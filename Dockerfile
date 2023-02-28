@@ -6,7 +6,7 @@ RUN go mod download
 COPY . .
 RUN go build -o /strava_komoot_sync
 
-FROM alpine:latest
+FROM alpine:latest AS runtime-image
 WORKDIR /
 COPY --from=build /strava_komoot_sync /strava_komoot_sync
 EXPOSE 8080
