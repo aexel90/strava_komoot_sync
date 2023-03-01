@@ -15,7 +15,7 @@ What is synced:
 
     Usage of ./strava_komoot_sync:
         -debug
-    	        Log debug level
+                Log debug level
         -komoot_email string
                 Komoot Email
         -komoot_pw string
@@ -29,9 +29,9 @@ What is synced:
         -strava_clientsecret string
                 Strava Client Secret
         -strava_virtualRide_gearid string
-    	        Strava Virtual Ride GearID
+                Strava Virtual Ride GearID
         -sync_all
-    	        Sync all activities
+                Sync all activities
 
 Flag "-sync_all"
 - true:  all activities will be synched once and program terminates
@@ -42,7 +42,7 @@ Flag "-sync_all"
         docker build --tag stravakomootsync:latest .
         docker run -d -p 8080:8080 --name stravakomootsync --restart unless-stopped -e 'KOMOOT_EMAIL=*****' -e 'KOMOOT_PWD=*****' -e 'KOMOOT_USERID=*****' -e 'STRAVA_CLIENTID=*****' -e 'STRAVA_CLIENTSECRET=*****' -e 'STRAVA_ATHLETEID=*****' -e 'STRAVA_VIRT_GEARID=*****' stravakomootsync
 
-### ... via docker-compose
+### ... via docker-compose and pre-build package from ghcr.io
         cp .env.template .env
         vi .env
         docker compose up -d
