@@ -116,7 +116,13 @@ func (k *KomootService) requestActivities(page int) (data *[]Activity, err error
 	}
 
 	url := fmt.Sprintf("%s/users/%s/tours/?type=tour_recorded&limit=100&page=%d", komootApiURL, k.userid, page)
-	resp, err := httpClient.Get(url)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.SetBasicAuth(k.email, k.password)
+
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -202,6 +208,7 @@ func (k *KomootService) UpdateActivity(komootActivity *Activity, name string, pu
 	url := fmt.Sprintf("%s/tours/%v", komootApiURL, komootActivity.ID)
 	req, err := http.NewRequest(http.MethodPatch, url, bytes.NewBuffer(payload))
 	req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth(k.email, k.password)
 	if err != nil {
 		return err
 	}
