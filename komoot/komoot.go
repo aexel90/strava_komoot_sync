@@ -8,22 +8,18 @@ import (
 	"io"
 	"net/http"
 	"net/http/cookiejar"
-	"net/url"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 )
 
 type KomootService struct {
-	email            string
-	password         string
-	userid           string
-	clientLoginAlive bool
-	httpClient       *http.Client
+	email      string
+	password   string
+	userid     string
+	httpClient *http.Client
 }
 
-const komootSignInURL = "https://account.komoot.com/v1/signin"
-const komootTransferURL = "https://account.komoot.com/actions/transfer?type=signin"
 const komootApiURL = "https://www.komoot.de/api/v007"
 const statusFriends = "friends"
 
@@ -31,7 +27,7 @@ const ActivityDateFormat1 = "2006-01-02T15:04:05.000Z"
 const ActivityDateFormat2 = "2006-01-02T15:04:05.000-07:00"
 
 func NewKomootService(email string, password string, userid string) *KomootService {
-	return &KomootService{email, password, userid, false, nil}
+	return &KomootService{email, password, userid, nil}
 }
 
 func (k *KomootService) getHttpClient() (*http.Client, error) {
@@ -45,41 +41,7 @@ func (k *KomootService) getHttpClient() (*http.Client, error) {
 		k.httpClient = &http.Client{Jar: jar}
 
 	}
-	if !k.clientLoginAlive {
 
-		//SignIn
-		resp, err := k.httpClient.PostForm(komootSignInURL, url.Values{
-			"password": {k.password},
-			"email":    {k.email},
-		})
-		if err != nil {
-			return nil, err
-		}
-		io.Copy(io.Discard, resp.Body)
-		defer resp.Body.Close()
-
-		status := fmt.Sprintf("%s: %s", komootSignInURL, resp.Status)
-		if resp.StatusCode != http.StatusOK {
-			return nil, errors.New(status)
-		}
-		log.Debug(status)
-
-		//Tranfer
-		resp, err = k.httpClient.Get(komootTransferURL)
-		if err != nil {
-			return nil, err
-		}
-		io.Copy(io.Discard, resp.Body)
-		defer resp.Body.Close()
-
-		status = fmt.Sprintf("%s: %s", komootTransferURL, resp.Status)
-		if resp.StatusCode != http.StatusOK {
-			return nil, errors.New(status)
-		}
-		log.Debug(status)
-
-		k.clientLoginAlive = true
-	}
 	return k.httpClient, nil
 }
 
@@ -135,7 +97,6 @@ func (k *KomootService) requestActivities(page int) (data *[]Activity, err error
 
 	status := fmt.Sprintf("%s: %s", url, resp.Status)
 	if resp.StatusCode != http.StatusOK {
-		k.clientLoginAlive = false
 		return nil, errors.New(status)
 	}
 	log.Debug(status)
