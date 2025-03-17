@@ -1,18 +1,9 @@
-version: '3.4'
-
 services:
-  stravakomootsync:
-    image: ghcr.io/aexel90/strava_komoot_sync/image:latest
-    container_name: stravakomootsync
+  strava_komoot_sync:
+    image: ghcr.io/aexel90/strava_komoot_sync:latest
+    container_name: strava_komoot_sync
     restart: on-failure:2
-    ports:
-      - 8080:8080
     env_file:
       - .env
     volumes:
       - ./token.json:/token.json
-    logging:
-        driver: "json-file"
-        options:
-            max-file: "3"
-            max-size: 10m
